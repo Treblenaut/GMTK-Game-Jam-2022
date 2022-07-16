@@ -9,24 +9,48 @@ public class PlayerMovement : MonoBehaviour
     public Transform groundCheck;
     public LayerMask groundLayer;
 
-    private float horizontal;
-    private float speed = 8f;
-    private float jumpingPower = 10f;
+    private float horizontalMoveInput;
+    private float moveSpeed = 15f;
+    private float jumpingPower = 20f;
     private bool isFacingRight = true;
+
+    private float acceleration = 2f;
+    private float deceleration = 2f;
+    private float velocityPower = 2f;
 
     // Update is called once per frame
     void Update()
     {
-        rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+        if (!isFacingRight && horizontalMoveInput > 0f)
+        {
+            Flip();
+        }
+        else if (isFacingRight && horizontalMoveInput < 0f)
+        {
+            Flip();
+        }
+    }
 
-        if (!isFacingRight && horizontal > 0f)
-        {
-            Flip();
-        }
-        else if (isFacingRight && horizontal < 0f)
-        {
-            Flip();
-        }
+    public void FixedUpdate()
+    {
+        #region Run
+
+        // Calculate the direction we want to move in and our desired velocity
+        float targetSpeed = horizontalMoveInput * moveSpeed;
+
+        // Calculate difference between current velocity and desired velocity
+        float speedDif = targetSpeed - rb.velocity.x;
+
+        // Change acceleration rate depending on situation
+        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+
+        // Applies acceleration to speed difference, then raises to a set power so acceleration increases with higher speeds
+        float movement = Mathf.Pow(Mathf.Abs(speedDif) * accelRate, velocityPower) * Mathf.Sign(speedDif);
+
+        // Applies force to RigidBody, multiplying by Vector2.Right so that it only affects X axis
+        rb.AddForce(movement * Vector2.right);
+
+        #endregion
     }
 
     public void Jump(InputAction.CallbackContext context)
@@ -57,6 +81,6 @@ public class PlayerMovement : MonoBehaviour
 
     public void Move(InputAction.CallbackContext context)
     {
-        horizontal = context.ReadValue<Vector2>().x;
+        horizontalMoveInput = context.ReadValue<Vector2>().x;
     }
 }
